@@ -25,7 +25,7 @@ SN13_API_KEY = os.getenv("SN13_API_KEY")
 SN1_API_KEY = os.getenv("SN1_API_KEY")
 
 
-@mcp.tool(description='Tool to fetch the data from X and Reddit')
+@mcp.tool(description='Tool to fetch the data from X and Reddit, the data-source should X or Reddit!!!!')
 async def query_on_demand_data(
     source: str,
     usernames: Optional[List[str]] = None,
@@ -38,7 +38,7 @@ async def query_on_demand_data(
     Query data on demand from various sources.
 
     Args:
-        source: Data source (e.g. X, REDDIT)
+        source: Data source:  X, REDDIT
         usernames: List of usernames to filter by
         keywords: List of keywords to search for
         start_date: Start date in ISO format (e.g. 2023-01-01T00:00:00Z)
@@ -181,10 +181,9 @@ async def benchmark_search_queries(
 
             start_time = time.perf_counter()
             try:
-                response = await client.post(f"{SN1_API_BASE}web_retrieval", headers=headers, json=payload, timeout=timeout_seconds)
+                response = await client.post(f"{SN1_API_BASE}/web_retrieval", headers=headers, json=payload, timeout=timeout_seconds)
                 response.raise_for_status()
                 data = response.json()
-
                 elapsed = time.perf_counter() - start_time
                 results = data.get("results", [])
                 result_length = len(results) if isinstance(results, list) else 0
@@ -197,6 +196,7 @@ async def benchmark_search_queries(
 
             except Exception as e:
                 elapsed = time.perf_counter() - start_time
+                return e
                 print(f"Query failed: {query} ({elapsed:.3f}s). Error: {e}")
 
     if query_count == 0:
