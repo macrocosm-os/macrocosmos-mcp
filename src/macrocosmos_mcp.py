@@ -19,10 +19,32 @@ logger = logging.getLogger("macrocosmos_mcp_server")
 
 
 # Constants
-MC_KEY = os.getenv("SN1_API_KEY")
+MC_KEY = os.getenv("MC_KEY")
 
 
-@mcp.tool(description='Tool to fetch the data from X and Reddit, the data-source should X or Reddit!!!!')
+@mcp.tool(description="""
+Fetch real-time social media data from X (Twitter) and Reddit through the Macrocosmos SN13 network.
+
+IMPORTANT: This tool requires 'source' parameter to be either 'X' or 'REDDIT' (case-sensitive).
+
+Parameters:
+- source (str, REQUIRED): Data platform - must be 'X' or 'REDDIT'
+- usernames (List[str], optional): Up to 5 Twitter usernames to monitor (X only - NOT available for Reddit). Each username must start with '@' (e.g., ['@elonmusk', '@sundarpichai'])
+- keywords (List[str], optional): Up to 5 keywords/hashtags to search. For Reddit, use subreddit names (e.g., ['MachineLearning', 'technology'])
+- start_date (str, optional): Start timestamp in ISO format (e.g., '2024-01-01T00:00:00Z'). Defaults to 24h ago if not specified
+- end_date (str, optional): End timestamp in ISO format (e.g., '2024-06-03T23:59:59Z'). Defaults to current time if not specified  
+- limit (int, optional): Maximum results to return (1-1000). Default: 10
+
+Usage Examples:
+1. Monitor Twitter users: query_on_demand_data(source='X', usernames=['@elonmusk', '@sundarpichai'], limit=20)
+2. Search Twitter keywords: query_on_demand_data(source='X', keywords=['AI', '#MachineLearning'], limit=50)
+3. Monitor Reddit subreddits: query_on_demand_data(source='REDDIT', keywords=['MachineLearning', 'technology'], limit=30)
+4. Time-bounded search: query_on_demand_data(source='X', keywords=['Bitcoin'], start_date='2024-06-01T00:00:00Z', end_date='2024-06-03T23:59:59Z')
+
+Returns: Structured data with content, metadata, user info, timestamps, and platform-specific details. Each item includes URI, datetime, source, label, content preview, and additional metadata.
+
+Note: Reddit does not support username filtering - use subreddit names in the keywords parameter instead. All X/Twitter usernames must include the '@' symbol.
+""")
 async def query_on_demand_data(
     source: str,
     usernames: Optional[List[str]] = None,
@@ -42,10 +64,10 @@ async def query_on_demand_data(
         end_date: End date in ISO format
         limit: Maximum number of items to return
     """
-    client = mc.Sn13Client(api_key=MC_KEY)
+    client = mc.AsyncSn13Client(api_key=MC_KEY)
 
-    response = client.sn13.OnDemandData(
-        source='X',  # or 'Reddit'
+    response = await client.sn13.OnDemandData(
+        source=source,  # or 'Reddit'
         usernames=usernames if usernames else [],  # Optional, up to 5 users
         keywords=keywords if keywords else [],  # Optional, up to 5 keywords
         start_date=start_date,  # Defaults to 24h range if not specified
@@ -59,7 +81,7 @@ async def query_on_demand_data(
     status = response.get("status")
 
     if status == "error":
-        error_msg = result.get("meta", {}).get("error", "Unknown error")
+        error_msg = response.get("meta", {}).get("error", "Unknown error")
         return f"Error: {error_msg}"
 
     data = response.get("data", [])
