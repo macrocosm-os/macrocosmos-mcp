@@ -7,7 +7,6 @@
 ## ⚡ Features
 
 - 🔍 Query **X** (Twitter) and **Reddit** data on demand
-- 🌐 Perform live **web search** using SN1 miners
 - 📚 Explore **SN13 Hugging Face** repositories and datasets
 
 ---
@@ -26,7 +25,7 @@ cd macrocosmos-mcp/src
 ```bash
 uv venv
 source .venv/bin/activate
-uv add "mcp[cli]" httpx
+uv add "mcp[cli]" httpx macrocosmos
 ```
 
 ### 3. Configure Claude or Cursor
@@ -48,8 +47,7 @@ Add this entry:
         "macrocosmos_mcp.py"
     ],
     "env": {
-        "SN1_API_KEY": "",
-        "SN13_API_KEY": ""
+        "MC_KEY": "",
     }
 }
 ```

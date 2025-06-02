@@ -4,7 +4,7 @@ import httpx
 import logging
 from mcp.server.fastmcp import FastMCP
 import time
-
+import macrocosmos as mc
 
 # Initialize FastMCP server
 mcp = FastMCP("macrocosmos")
@@ -19,13 +19,32 @@ logger = logging.getLogger("macrocosmos_mcp_server")
 
 
 # Constants
-SN13_API_BASE = "https://sn13.api.macrocosmos.ai/api/v1"
-SN1_API_BASE = "https://sn1.api.macrocosmos.ai"
-SN13_API_KEY = os.getenv("SN13_API_KEY")
-SN1_API_KEY = os.getenv("SN1_API_KEY")
+MC_KEY = os.getenv("MC_KEY")
 
 
-@mcp.tool(description='Tool to fetch the data from X and Reddit, the data-source should X or Reddit!!!!')
+@mcp.tool(description="""
+Fetch real-time social media data from X (Twitter) and Reddit through the Macrocosmos SN13 network.
+
+IMPORTANT: This tool requires 'source' parameter to be either 'X' or 'REDDIT' (case-sensitive).
+
+Parameters:
+- source (str, REQUIRED): Data platform - must be 'X' or 'REDDIT'
+- usernames (List[str], optional): Up to 5 Twitter usernames to monitor (X only - NOT available for Reddit). Each username must start with '@' (e.g., ['@elonmusk', '@sundarpichai'])
+- keywords (List[str], optional): Up to 5 keywords/hashtags to search. For Reddit, use subreddit names (e.g., ['MachineLearning', 'technology'])
+- start_date (str, optional): Start timestamp in ISO format (e.g., '2024-01-01T00:00:00Z'). Defaults to 24h ago if not specified
+- end_date (str, optional): End timestamp in ISO format (e.g., '2024-06-03T23:59:59Z'). Defaults to current time if not specified  
+- limit (int, optional): Maximum results to return (1-1000). Default: 10
+
+Usage Examples:
+1. Monitor Twitter users: query_on_demand_data(source='X', usernames=['@elonmusk', '@sundarpichai'], limit=20)
+2. Search Twitter keywords: query_on_demand_data(source='X', keywords=['AI', '#MachineLearning'], limit=50)
+3. Monitor Reddit subreddits: query_on_demand_data(source='REDDIT', keywords=['MachineLearning', 'technology'], limit=30)
+4. Time-bounded search: query_on_demand_data(source='X', keywords=['Bitcoin'], start_date='2024-06-01T00:00:00Z', end_date='2024-06-03T23:59:59Z')
+
+Returns: Structured data with content, metadata, user info, timestamps, and platform-specific details. Each item includes URI, datetime, source, label, content preview, and additional metadata.
+
+Note: Reddit does not support username filtering - use subreddit names in the keywords parameter instead. All X/Twitter usernames must include the '@' symbol.
+""")
 async def query_on_demand_data(
     source: str,
     usernames: Optional[List[str]] = None,
@@ -45,41 +64,28 @@ async def query_on_demand_data(
         end_date: End date in ISO format
         limit: Maximum number of items to return
     """
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": SN13_API_KEY
-    }
+    client = mc.AsyncSn13Client(api_key=MC_KEY)
 
-    request_data = {
-        "source": source,
-        "usernames": usernames or [],
-        "keywords": keywords or [],
-        "start_date": start_date,
-        "end_date": end_date,
-        "limit": limit
-    }
+    response = await client.sn13.OnDemandData(
+        source=source,  # or 'Reddit'
+        usernames=usernames if usernames else [],  # Optional, up to 5 users
+        keywords=keywords if keywords else [],  # Optional, up to 5 keywords
+        start_date=start_date,  # Defaults to 24h range if not specified
+        end_date=end_date,  # Defaults to current time if not specified
+        limit=limit  # Optional, up to 1000 results
+    )
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(f"{SN13_API_BASE}/on_demand_data_request",
-                                     headers=headers, json=request_data, timeout=30.0)
-            response.raise_for_status()
-            result = response.json()
-        except Exception as e:
-            logger.error(f"API request error: {e}")
-            return e
-
-    if not result:
+    if not response:
         return "Failed to fetch data. Please check your API key and parameters."
 
-    status = result.get("status")
+    status = response.get("status")
 
     if status == "error":
-        error_msg = result.get("meta", {}).get("error", "Unknown error")
+        error_msg = response.get("meta", {}).get("error", "Unknown error")
         return f"Error: {error_msg}"
 
-    data = result.get("data", [])
-    meta = result.get("meta", {})
+    data = response.get("data", [])
+    meta = response.get("meta", {})
 
     if not data:
         return "No data found for the specified criteria."
@@ -107,109 +113,6 @@ async def query_on_demand_data(
 
     return meta_info + "\n\n" + "\n---\n".join(formatted_data)
 
-
-@mcp.tool(description='Tool to get HF repository and dataset list uploaded by SN13')
-async def list_hf_repos() -> str:
-    """
-    Get a list of Hugging Face repository names using a GET request.
-    """
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": SN13_API_KEY
-    }
-
-    url = f"{SN13_API_BASE.rstrip('/')}/list_repo_names"
-    logging.info(f"Fetching Hugging Face repositories from {url}")
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, headers=headers, timeout=30.0)
-            response.raise_for_status()
-            result = response.json()
-        except Exception as e:
-            logger.error(f"API request error: {e}")
-            return e
-
-    count = result.get("count", 0)
-    repos = result.get("repo_names", [])
-
-    if not repos:
-        return "No repositories found."
-
-    return f"Found {count} Hugging Face repositories:\n\n" + "\n".join(repos)
-
-
-@mcp.tool(description="Tool to perform the web-search with apex")
-async def benchmark_search_queries(
-    search_queries: List[str],
-    n_miners: int = 5,
-    n_results: int = 5,
-    max_response_time: int = 10,
-    timeout_seconds: float = 12.0
-) -> str:
-    """
-    Tool to perform the web-search with apex
-    Benchmark search queries by measuring response time and result count.
-
-    Args:
-        search_queries: List of search strings to query.
-        n_miners: Number of miners to query.
-        n_results: Number of results per query.
-        max_response_time: Maximum time miners can take to respond.
-        timeout_seconds: Timeout for each API call.
-
-    Returns:
-        A summary string with average result length and average response time.
-    """
-    headers = {
-        "accept": "application/json",
-        "api-key": SN1_API_KEY,
-        "Content-Type": "application/json",
-    }
-
-    total_length = 0
-    total_time = 0.0
-    query_count = 0
-
-    async with httpx.AsyncClient() as client:
-        for query in search_queries:
-            payload = {
-                "search_query": query,
-                "n_miners": n_miners,
-                "n_results": n_results,
-                "max_response_time": max_response_time,
-            }
-
-            start_time = time.perf_counter()
-            try:
-                response = await client.post(f"{SN1_API_BASE}/web_retrieval", headers=headers, json=payload, timeout=timeout_seconds)
-                response.raise_for_status()
-                data = response.json()
-                elapsed = time.perf_counter() - start_time
-                results = data.get("results", [])
-                result_length = len(results) if isinstance(results, list) else 0
-
-                total_length += result_length
-                total_time += elapsed
-                query_count += 1
-
-                print(f"{query} : {result_length} : {elapsed:.3f}s")
-
-            except Exception as e:
-                elapsed = time.perf_counter() - start_time
-                return e
-                print(f"Query failed: {query} ({elapsed:.3f}s). Error: {e}")
-
-    if query_count == 0:
-        return "No successful queries to compute stats."
-
-    average_length = total_length / query_count
-    average_time = total_time / query_count
-
-    return (
-        f"Benchmark completed on {query_count} queries.\n"
-        f"- Average result length: {average_length:.2f}\n"
-        f"- Average response time: {average_time:.3f} seconds"
-    )
 
 if __name__ == "__main__":
     mcp.run(transport='stdio')
