@@ -62,5 +62,5 @@ Replace `/full_path_to_repo/` with your full local path and insert your API keys
 
 ---
 
-MIT License  
+MIT License
 Made with ❤️ by the Macrocosm OS team
