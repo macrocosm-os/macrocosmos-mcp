@@ -1,0 +1,40 @@
+[project]
+name = "macrocosmos-mcp"
+version = "0.1.0"
+description = "MCP server for integrating SN13 and SN1 APIs into Claude Desktop and Cursor"
+authors = [
+    { name = "Macrocosmos AI" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+keywords = ["mcp", "claude", "cursor", "api", "social-data", "huggingface"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project]
+dependencies = [
+    "mcp[cli]",
+    "httpx",
+    "macrocosmos",
+]
+
+[project.urls]
+Homepage = "https://github.com/macrocosm-os/macrocosmos-mcp"
+Repository = "https://github.com/macrocosm-os/macrocosmos-mcp"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
