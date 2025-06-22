@@ -47,7 +47,7 @@ Add this entry:
         "macrocosmos_mcp.py"
     ],
     "env": {
-        "MC_KEY": "",
+        "MC_API": "",
     }
 }
 ```
