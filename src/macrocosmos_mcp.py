@@ -524,5 +524,11 @@ Question to test: {question}"""
     ]
 
 
+def get_mcp():
+    """Return the singleton FastMCP instance so other modules can re-use it."""
+    return mcp
+
+
+
 if __name__ == "__main__":
-    mcp.run(transport='stdio')
+    mcp.run(transport="stdio")
