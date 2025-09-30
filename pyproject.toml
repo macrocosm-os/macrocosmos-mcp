@@ -1,7 +1,11 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "macrocosmos-mcp"
 version = "0.1.0"
-description = "MCP server for integrating SN13 and SN1 APIs into Claude Desktop and Cursor"
+description = "MCP server for integrating Macrocosmos SN13 social media data into Claude Desktop and Cursor"
 authors = [
     { name = "Macrocosmos AI" }
 ]
@@ -24,13 +28,18 @@ dependencies = [
     "macrocosmos",
 ]
 
+[project.scripts]
+macrocosmos-mcp = "macrocosmos_mcp.macrocosmos_mcp:main"
+
 [project.urls]
 Homepage = "https://github.com/macrocosm-os/macrocosmos-mcp"
 Repository = "https://github.com/macrocosm-os/macrocosmos-mcp"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "build",
+    "twine",
+]
