@@ -11,6 +11,28 @@
 
 ---
 
+## Quickstart with Claude Desktop
+
+1. Get your API key from [Macrocosmos](https://app.macrocosmos.ai/account?tab=api-keys). There is a free tier with $5 of credits to start.
+2. Install `uv` (Python package manager), install with `curl -LsSf https://astral.sh/uv/install.sh | sh` or see the `uv` [repo](https://github.com/astral-sh/uv) for additional install methods.
+3. Go to Claude > Settings > Developer > Edit Config > claude_desktop_config.json to include the following:
+
+```
+{
+  "mcpServers": {
+    "macrocosmos": {
+      "command": "uvx",
+      "args": ["macrocosmos-mcp"],
+      "env": {
+        "MC_API": "<insert-your-api-key-here>"
+      }
+    }
+  }
+}
+
+```
+
+
 ## 🚀 Quick Setup
 
 ### 1. Clone the Repo
