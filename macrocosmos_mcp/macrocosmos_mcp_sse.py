@@ -5,12 +5,11 @@ Based on working Bittensor pattern - just converted tools and auth
 
 from __future__ import annotations
 
-import asyncio
 import contextvars
+import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-import httpx
 import macrocosmos as mc
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -24,12 +23,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("macrocosmos_mcp_sse")
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-APEX_BASE_URL = "https://constellation.api.cloud.macrocosmos.ai"
 
 # ---------------------------------------------------------------------------
 # Context propagation
@@ -77,73 +70,6 @@ async def auth_middleware(request: Request, call_next):
 
 # Mount MCP after the middleware so SSE handshakes are protected too
 app.mount("/", mcp.sse_app())
-
-# ---------------------------------------------------------------------------
-# Helper Classes
-# ---------------------------------------------------------------------------
-
-class ApexClient:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = APEX_BASE_URL
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-
-    async def chat_completion(
-            self,
-            messages: List[Dict[str, str]],
-            temperature: float = 0.7,
-            top_p: float = 0.95,
-            max_new_tokens: int = 256,
-            do_sample: bool = True,
-            model: str = "Default"
-    ) -> Dict[str, Any]:
-        payload = {
-            "messages": messages,
-            "sampling_parameters": {
-                "temperature": temperature,
-                "top_p": top_p,
-                "max_new_tokens": max_new_tokens,
-                "do_sample": do_sample
-            }
-        }
-
-        if model != "Default":
-            payload["model"] = model
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.base_url}/apex.v1.ApexService/ChatCompletion",
-                headers=self.headers,
-                json=payload
-            )
-            response.raise_for_status()
-            return response.json()
-
-    async def web_search(
-            self,
-            search_query: str,
-            n_miners: int = 3,
-            max_results_per_miner: int = 2,
-            max_response_time: int = 30
-    ) -> Dict[str, Any]:
-        payload = {
-            "search_query": search_query,
-            "n_miners": n_miners,
-            "max_results_per_miner": max_results_per_miner,
-            "max_response_time": max_response_time
-        }
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.base_url}/apex.v1.ApexService/WebRetrieval",
-                headers=self.headers,
-                json=payload
-            )
-            response.raise_for_status()
-            return response.json()
 
 # ---------------------------------------------------------------------------
 # MCP Tools
@@ -199,126 +125,17 @@ async def query_on_demand_data(
     if not response:
         return "Failed to fetch data. Please check your API key and parameters."
 
-    status = response.get("status")
+    # Convert response to dict if it's a Pydantic model or similar object
+    if hasattr(response, 'model_dump'):
+        response_dict = response.model_dump()
+    elif hasattr(response, 'dict'):
+        response_dict = response.dict()
+    elif isinstance(response, dict):
+        response_dict = response
+    else:
+        response_dict = {"data": str(response)}
 
-    if status == "error":
-        error_msg = response.get("meta", {}).get("error", "Unknown error")
-        return f"Error: {error_msg}"
-
-    data = response.get("data", [])
-    meta = response.get("meta", {})
-
-    if not data:
-        return "No data found for the specified criteria."
-
-    formatted_data = []
-    for item in data:
-        formatted_item = f"""
-            URI: {item.get('uri', 'N/A')}
-            Date: {item.get('datetime', 'N/A')}
-            Source: {item.get('source', 'N/A')}
-            Label: {item.get('label', 'N/A')}
-            Content: {item.get('content', 'No content')[:200]}...
-            MetaData: {item.get('tweet', 'N/A')}
-            UserInfo: {item.get('user', 'N/A')}
-            Media: {item.get('media', 'No media')}
-        """
-        formatted_data.append(formatted_item)
-
-    meta_info = f"""
-    Meta Information:
-        - Miners queried: {meta.get('miners_queried', 'N/A')}
-        - Data source: {meta.get('source', 'N/A')}
-        - Items returned: {meta.get('items_returned', len(data))}
-    """
-
-    return meta_info + "\n\n" + "\n---\n".join(formatted_data)
-
-
-@mcp.tool()
-async def apex_chat(
-        prompt: str,
-        temperature: float = 0.7,
-        top_p: float = 0.95,
-        max_new_tokens: int = 256,
-        do_sample: bool = True,
-        model: str = "Default"
-) -> str:
-    """Send a chat completion request to Apex (SN1) decentralized LLMs."""
-
-    user_api_key = get_user_api_key()
-
-    if not user_api_key:
-        return "Error: No Macrocosmos API key available"
-
-    try:
-        client = ApexClient(user_api_key)
-        messages = [{"role": "user", "content": prompt}]
-
-        result = await client.chat_completion(
-            messages=messages,
-            temperature=temperature,
-            top_p=top_p,
-            max_new_tokens=max_new_tokens,
-            do_sample=do_sample,
-            model=model
-        )
-
-        if "choices" in result and len(result["choices"]) > 0:
-            response_content = result["choices"][0]["message"]["content"]
-            model_used = result.get("model", "Unknown")
-            return f"**Model:** {model_used}\n\n**Response:**\n{response_content}"
-        else:
-            return f"Error: Unexpected response format: {result}"
-
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-
-@mcp.tool()
-async def apex_web_search(
-        search_query: str,
-        n_miners: int = 3,
-        max_results_per_miner: int = 2,
-        max_response_time: int = 30
-) -> str:
-    """Perform web search using Apex's decentralized web retrieval."""
-
-    user_api_key = get_user_api_key()
-
-    if not user_api_key:
-        return "Error: No Macrocosmos API key available"
-
-    try:
-        client = ApexClient(user_api_key)
-
-        result = await client.web_search(
-            search_query=search_query,
-            n_miners=n_miners,
-            max_results_per_miner=max_results_per_miner,
-            max_response_time=max_response_time
-        )
-
-        if "results" in result:
-            formatted_results = []
-            for i, search_result in enumerate(result["results"], 1):
-                url = search_result.get("url", "No URL")
-                content = search_result.get("content", "No content")
-                relevant = search_result.get("relevant", "No summary")
-
-                formatted_results.append(f"""
-**Result {i}:**
-- **URL:** {url}
-- **Content Preview:** {content[:200]}...
-- **Relevant Info:** {relevant[:300]}...
-""")
-
-            return f"**Search Query:** {search_query}\n**Results from {n_miners} miners:**\n" + "\n".join(formatted_results)
-        else:
-            return f"Error: Unexpected response format: {result}"
-
-    except Exception as e:
-        return f"Error: {str(e)}"
+    return json.dumps(response_dict, indent=2, default=str)
 
 # ---------------------------------------------------------------------------
 # Entrypoint

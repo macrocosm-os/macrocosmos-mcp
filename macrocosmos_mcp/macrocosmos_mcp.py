@@ -1,5 +1,6 @@
+import json
 import os
-from typing import Any, List, Optional, Dict
+from typing import List, Optional
 import logging
 from mcp.server.fastmcp import FastMCP
 import macrocosmos as mc
@@ -116,7 +117,18 @@ async def query_on_demand_data(
     if not response:
         return "Failed to fetch data. Please check your API key and parameters."
 
-    return response
+    # Convert response to dict if it's a Pydantic model or similar object
+    if hasattr(response, 'model_dump'):
+        response_dict = response.model_dump()
+    elif hasattr(response, 'dict'):
+        response_dict = response.dict()
+    elif isinstance(response, dict):
+        response_dict = response
+    else:
+        response_dict = {"data": str(response)}
+
+    # Return as JSON string - MCP expects string return type
+    return json.dumps(response_dict, indent=2, default=str)
 
 
 def get_mcp():
