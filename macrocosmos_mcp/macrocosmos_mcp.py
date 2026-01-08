@@ -11,8 +11,7 @@ mcp = FastMCP("macrocosmos")
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("macrocosmos_mcp_server")
 
@@ -24,7 +23,8 @@ if not MC_API:
     logger.warning("MC_API environment variable not set")
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Fetch real-time social media data from X (Twitter) and Reddit through the Macrocosmos SN13 network.
 IMPORTANT: This tool requires 'source' parameter to be either 'X' or 'REDDIT' (case-sensitive).
 Parameters:
@@ -75,7 +75,8 @@ Platform-Specific Notes:
 - X (Twitter): '@' symbol is optional for usernames
 - Reddit: Does NOT support username filtering, only subreddit/keyword searches
 - All timestamps returned in UTC format
-""")
+"""
+)
 async def query_on_demand_data(
     source: str,
     usernames: Optional[List[str]] = None,
@@ -83,7 +84,7 @@ async def query_on_demand_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = 10,
-    keyword_mode: str = "any"
+    keyword_mode: str = "any",
 ) -> str:
     """
     Query data on demand from various sources.
@@ -106,16 +107,16 @@ async def query_on_demand_data(
         start_date=start_date,  # Defaults to 24h range if not specified
         end_date=end_date,  # Defaults to current time if not specified
         limit=limit,  # Optional, up to 1000 results
-        keyword_mode=keyword_mode  # 'any' or 'all'
+        keyword_mode=keyword_mode,  # 'any' or 'all'
     )
 
     if not response:
         return "Failed to fetch data. Please check your API key and parameters."
 
     # Convert response to dict if it's a Pydantic model or similar object
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -126,7 +127,8 @@ async def query_on_demand_data(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Create a Gravity task for large-scale data collection from X (Twitter) or Reddit.
 Use this for collecting large datasets over time (up to 7 days). For quick queries (up to 1000 results), use query_on_demand_data instead.
 
@@ -171,12 +173,13 @@ Examples:
        name="AI Data Collection",
        email="user@example.com"
    )
-""")
+"""
+)
 async def create_gravity_task(
     tasks: List[dict],
     name: Optional[str] = None,
     email: Optional[str] = None,
-    redirect_url: Optional[str] = "https://app.macrocosmos.ai/"
+    redirect_url: Optional[str] = "https://app.macrocosmos.ai/",
 ) -> str:
     """
     Create a Gravity task for large-scale data collection.
@@ -192,25 +195,31 @@ async def create_gravity_task(
     # Build notification requests if email provided
     notification_requests = []
     if email:
-        notification_requests.append({
-            "type": "email",
-            "address": email,
-            "redirect_url": redirect_url or "https://app.macrocosmos.ai/"
-        })
+        notification_requests.append(
+            {
+                "type": "email",
+                "address": email,
+                "redirect_url": redirect_url or "https://app.macrocosmos.ai/",
+            }
+        )
 
     response = await client.gravity.CreateGravityTask(
         gravity_tasks=tasks,
         name=name,
-        notification_requests=notification_requests if notification_requests else None
+        notification_requests=notification_requests if notification_requests else None,
     )
 
     if not response:
-        return json.dumps({"error": "Failed to create gravity task. Please check your API key and parameters."})
+        return json.dumps(
+            {
+                "error": "Failed to create gravity task. Please check your API key and parameters."
+            }
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -220,7 +229,8 @@ async def create_gravity_task(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Get the status of a Gravity task and see how much data has been collected.
 
 Parameters:
@@ -236,10 +246,10 @@ Returns:
 
 Example:
 get_gravity_task_status(gravity_task_id="multicrawler-9f518ae4-xxxx-xxxx-xxxx-8b73d7cd4c49")
-""")
+"""
+)
 async def get_gravity_task_status(
-    gravity_task_id: str,
-    include_crawlers: bool = True
+    gravity_task_id: str, include_crawlers: bool = True
 ) -> str:
     """
     Get the status of a Gravity task.
@@ -251,17 +261,18 @@ async def get_gravity_task_status(
     client = mc.AsyncGravityClient(api_key=MC_API)
 
     response = await client.gravity.GetGravityTasks(
-        gravity_task_id=gravity_task_id,
-        include_crawlers=include_crawlers
+        gravity_task_id=gravity_task_id, include_crawlers=include_crawlers
     )
 
     if not response:
-        return json.dumps({"error": "Failed to get gravity task status. Please check the task ID."})
+        return json.dumps(
+            {"error": "Failed to get gravity task status. Please check the task ID."}
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -271,7 +282,8 @@ async def get_gravity_task_status(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Build a dataset from collected data before the 7-day task completion.
 Use this when you have enough data and don't want to wait for the full collection period.
 
@@ -295,12 +307,13 @@ build_dataset(
     max_rows=10000,
     email="user@example.com"
 )
-""")
+"""
+)
 async def build_dataset(
     crawler_id: str,
     max_rows: int = 10000,
     email: Optional[str] = None,
-    redirect_url: Optional[str] = "https://app.macrocosmos.ai/"
+    redirect_url: Optional[str] = "https://app.macrocosmos.ai/",
 ) -> str:
     """
     Build a dataset from a crawler's collected data.
@@ -315,11 +328,13 @@ async def build_dataset(
 
     # Build notification requests - always required by the API
     if email:
-        notification_requests = [{
-            "type": "email",
-            "address": email,
-            "redirect_url": redirect_url or "https://app.macrocosmos.ai/"
-        }]
+        notification_requests = [
+            {
+                "type": "email",
+                "address": email,
+                "redirect_url": redirect_url or "https://app.macrocosmos.ai/",
+            }
+        ]
     else:
         # API requires notification_requests, pass minimal object
         notification_requests = [{"type": "email"}]
@@ -327,16 +342,18 @@ async def build_dataset(
     response = await client.gravity.BuildDataset(
         crawler_id=crawler_id,
         max_rows=max_rows,
-        notification_requests=notification_requests
+        notification_requests=notification_requests,
     )
 
     if not response:
-        return json.dumps({"error": "Failed to build dataset. Please check the crawler ID."})
+        return json.dumps(
+            {"error": "Failed to build dataset. Please check the crawler ID."}
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -346,7 +363,8 @@ async def build_dataset(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Get the status of a dataset build and download links when ready.
 
 Parameters:
@@ -360,10 +378,9 @@ Returns:
 
 Example:
 get_dataset_status(dataset_id="dataset-71e97cfa-xxxx-xxxx-xxxx-33cd91be9028")
-""")
-async def get_dataset_status(
-    dataset_id: str
-) -> str:
+"""
+)
+async def get_dataset_status(dataset_id: str) -> str:
     """
     Get the status of a dataset build.
 
@@ -375,12 +392,14 @@ async def get_dataset_status(
     response = await client.gravity.GetDataset(dataset_id=dataset_id)
 
     if not response:
-        return json.dumps({"error": "Failed to get dataset status. Please check the dataset ID."})
+        return json.dumps(
+            {"error": "Failed to get dataset status. Please check the dataset ID."}
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -390,7 +409,8 @@ async def get_dataset_status(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Cancel a running Gravity task and stop data collection.
 
 Parameters:
@@ -401,10 +421,9 @@ Returns:
 
 Example:
 cancel_gravity_task(gravity_task_id="multicrawler-9f518ae4-xxxx-xxxx-xxxx-8b73d7cd4c49")
-""")
-async def cancel_gravity_task(
-    gravity_task_id: str
-) -> str:
+"""
+)
+async def cancel_gravity_task(gravity_task_id: str) -> str:
     """
     Cancel a running Gravity task.
 
@@ -416,12 +435,14 @@ async def cancel_gravity_task(
     response = await client.gravity.CancelGravityTask(gravity_task_id=gravity_task_id)
 
     if not response:
-        return json.dumps({"error": "Failed to cancel gravity task. Please check the task ID."})
+        return json.dumps(
+            {"error": "Failed to cancel gravity task. Please check the task ID."}
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
@@ -431,7 +452,8 @@ async def cancel_gravity_task(
     return json.dumps(response_dict, indent=2, default=str)
 
 
-@mcp.tool(description="""
+@mcp.tool(
+    description="""
 Cancel a dataset build or purge a completed dataset.
 
 Parameters:
@@ -442,10 +464,9 @@ Returns:
 
 Example:
 cancel_dataset(dataset_id="dataset-71e97cfa-xxxx-xxxx-xxxx-33cd91be9028")
-""")
-async def cancel_dataset(
-    dataset_id: str
-) -> str:
+"""
+)
+async def cancel_dataset(dataset_id: str) -> str:
     """
     Cancel a dataset build or purge a completed dataset.
 
@@ -457,12 +478,14 @@ async def cancel_dataset(
     response = await client.gravity.CancelDataset(dataset_id=dataset_id)
 
     if not response:
-        return json.dumps({"error": "Failed to cancel dataset. Please check the dataset ID."})
+        return json.dumps(
+            {"error": "Failed to cancel dataset. Please check the dataset ID."}
+        )
 
     # Convert response to dict
-    if hasattr(response, 'model_dump'):
+    if hasattr(response, "model_dump"):
         response_dict = response.model_dump()
-    elif hasattr(response, 'dict'):
+    elif hasattr(response, "dict"):
         response_dict = response.dict()
     elif isinstance(response, dict):
         response_dict = response
