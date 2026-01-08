@@ -76,20 +76,18 @@ app.mount("/", mcp.sse_app())
 # ---------------------------------------------------------------------------
 
 @mcp.tool(description="""
-Fetch real-time social media data from X (Twitter), Reddit, and YouTube through the Macrocosmos SN13 network.
+Fetch real-time social media data from X (Twitter) and Reddit through the Macrocosmos SN13 network.
 
-IMPORTANT: This tool requires 'source' parameter to be either 'X', 'REDDIT', or 'YouTube' (case-sensitive).
+IMPORTANT: This tool requires 'source' parameter to be either 'X' or 'REDDIT' (case-sensitive).
 
 Parameters:
-- source (str, REQUIRED): Data platform - must be 'X', 'REDDIT', or 'YouTube'
+- source (str, REQUIRED): Data platform - must be 'X' or 'REDDIT'
 - usernames (List[str], optional): Up to 5 usernames to monitor.
   * For X: '@' symbol is optional (e.g., ['elonmusk', '@spacex'] both work)
-  * For YouTube: channel names (e.g., ['mrbeast', 'mkbhd'])
   * NOT available for Reddit
 - keywords (List[str], optional): Up to 5 keywords/hashtags to search.
   * For X: any keywords or hashtags (e.g., ['AI', 'crypto', '#bitcoin'])
   * For Reddit: subreddit names (e.g., ['r/astronomy', 'space']) or 'r/all' for all subreddits
-  * For YouTube: search terms
 - start_date (str, optional): Start timestamp in ISO format (e.g., '2024-01-01T00:00:00Z'). Defaults to 24h ago if not specified
 - end_date (str, optional): End timestamp in ISO format (e.g., '2024-06-03T23:59:59Z'). Defaults to current time if not specified
 - limit (int, optional): Maximum results to return (1-1000). Default: 10
@@ -145,7 +143,7 @@ async def query_on_demand_data(
 
 
 @mcp.tool(description="""
-Create a Gravity task for large-scale data collection from X (Twitter), Reddit, or YouTube.
+Create a Gravity task for large-scale data collection from X (Twitter) or Reddit.
 Use this for collecting large datasets over time (up to 7 days). For quick queries (up to 1000 results), use query_on_demand_data instead.
 
 The task registers on the network within 20 minutes and collects data for 7 days.
@@ -153,11 +151,10 @@ You'll receive an email notification when the dataset is ready for download.
 
 Parameters:
 - tasks (List[dict], REQUIRED): List of task objects, each containing:
-  * platform (str): 'x', 'reddit', or 'youtube'
+  * platform (str): 'x' or 'reddit'
   * topic (str): The hashtag/subreddit to monitor
     - For X: MUST start with '#' or '$' (e.g., '#ai', '$BTC') - plain keywords are rejected!
     - For Reddit: subreddit name (e.g., 'r/MachineLearning')
-    - For YouTube: search terms
   * keyword (str, optional): Additional keyword filter within the topic
     - Filters posts to only those containing this keyword
     - Example: topic='#Bittensor', keyword='dTAO' -> only #Bittensor posts mentioning 'dTAO'

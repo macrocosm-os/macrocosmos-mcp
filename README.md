@@ -2,7 +2,7 @@
 # Macrocosmos MCP
 
 <p align="center">
-  Official Macrocosmos <a href="https://github.com/modelcontextprotocol">Model Context Protocol (MCP)</a> server that enables interaction with X, Reddit and YouTube, powered by Data Universe (SN13) on Bittensor. This server allows MCP clients like <a href="https://www.anthropic.com/claude">Claude Desktop</a>, <a href="https://www.cursor.so">Cursor</a>, <a href="https://codeium.com/windsurf">Windsurf</a>, <a href="https://github.com/openai/openai-agents-python">OpenAI Agents</a> and others to fetch real-time social media and video transcript data.
+  Official Macrocosmos <a href="https://github.com/modelcontextprotocol">Model Context Protocol (MCP)</a> server that enables interaction with X (Twitter) and Reddit, powered by Data Universe (SN13) on Bittensor. This server allows MCP clients like <a href="https://www.anthropic.com/claude">Claude Desktop</a>, <a href="https://www.cursor.so">Cursor</a>, <a href="https://codeium.com/windsurf">Windsurf</a>, <a href="https://github.com/openai/openai-agents-python">OpenAI Agents</a> and others to fetch real-time social media data.
 </p>
 
 ---
@@ -33,12 +33,12 @@
 
 ### 1. `query_on_demand_data` - Real-time Social Media Queries
 
-Fetch real-time data from X (Twitter), Reddit, and YouTube. Best for quick queries up to 1000 results.
+Fetch real-time data from X (Twitter) and Reddit. Best for quick queries up to 1000 results.
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `source` | string | **REQUIRED**. Platform: `'X'`, `'REDDIT'`, or `'YouTube'` (case-sensitive) |
+| `source` | string | **REQUIRED**. Platform: `'X'` or `'REDDIT'` (case-sensitive) |
 | `usernames` | list | Up to 5 usernames. For X: `@` is optional. Not available for Reddit |
 | `keywords` | list | Up to 5 keywords. For Reddit: first item is subreddit (e.g., `'r/MachineLearning'`) |
 | `start_date` | string | ISO format (e.g., `'2024-01-01T00:00:00Z'`). Defaults to 24h ago |
@@ -67,7 +67,7 @@ Create a Gravity task for collecting large datasets over 7 days. Use this when y
 **Task object structure:**
 ```json
 {
-  "platform": "x",           // 'x', 'reddit', or 'youtube'
+  "platform": "x",           // 'x' or 'reddit'
   "topic": "#Bittensor",     // For X: MUST start with '#' or '$'
   "keyword": "dTAO"          // Optional: filter within topic
 }
@@ -184,7 +184,6 @@ User: "I need to collect a week's worth of #AI tweets for analysis"
 - "What has the president of the U.S. been saying over the past week on X?"
 - "Fetch me information about what people are posting on r/politics today."
 - "Please analyze posts from @elonmusk for the last week."
-- "Can you summarize the transcript of the latest video from WolfeyVGC?"
 - "Get me 100 tweets about #Bittensor and analyze the sentiment"
 
 ### Large-Scale Collection
