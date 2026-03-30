@@ -196,3 +196,8 @@ User: "I need to collect a week's worth of #AI tweets for analysis"
 
 MIT License
 Made with love by the Macrocosmos team
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/macrocosm-os-macrocosmos-mcp).
+
