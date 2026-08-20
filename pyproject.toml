@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macrocosmos-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "MCP server for integrating Macrocosmos SN13 social media data into Claude Desktop and Cursor"
 authors = [
     { name = "Macrocosmos AI" }
@@ -23,7 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "mcp[cli]",
+    # Pinned <2: SDK 2.0 removed mcp.server.fastmcp (see issue #13)
+    "mcp[cli]>=1.2,<2",
     "httpx",
     "macrocosmos",
 ]
